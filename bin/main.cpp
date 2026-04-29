@@ -1,5 +1,7 @@
 #include "../lib/Tuple.hpp"
 #include "../lib/Apply.hpp"
+#include "../lib/TTaskScheduler.hpp"
+#include "../lib/TaskNode.hpp"
 
 #include <iostream>
 

@@ -7,6 +7,7 @@
 #include "Tuple.hpp"
 #include "IntergerSequence.hpp"
 #include "SizeT.hpp"
+#include "IsSame.hpp"
 
 enum class Status 
 {
@@ -33,14 +34,14 @@ protected:
     std::unique_ptr<ResultType> result_;
     bool result_is_moved_ = false;
 
+public:
+
     template<typename T>
     void SetResult(T&& value) // сохраняем и copy и move
     {
         result_.reset(new ResultType(std::forward<T>(value)));
         result_is_moved_ = false;
     }
-
-public:
 
     ResultType& GetResultRef()
     {
@@ -87,6 +88,16 @@ public:
 
     virtual ~TaskNodeResult() = default;
 };
+
+template<> // cспецаилизация для void 
+class TaskNodeResult<void> : public TaskNodeBase
+{
+public:
+    void SetResult() {}
+
+    virtual ~TaskNodeResult() = default;
+};
+
 
 template<typename T>
 class TFuture // это считай обертка над TaskNodeResult 
@@ -157,9 +168,16 @@ class TaskNode : public TaskNodeResult<ResultType>
     template<MySTD::SizeT... I>
     void ExecuteImpl(MySTD::IndexSequence<I...>)
     {
-        this->SetResult(Invoke(func_, Resolve(Get<I>(args_))...));
+        if constexpr (!MySTD::IsSameV<ResultType, void>) 
+        {
+            this->SetResult(Invoke(func_, Resolve(Get<I>(args_))...));
+        }
+        else 
+        {
+            Invoke(func_, Resolve(Get<I>(args_))...);
+            this->SetResult();
+        }
     }
-
 
 public:
     template<typename AnotherFunc, typename... AArgs> 
