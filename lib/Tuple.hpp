@@ -4,6 +4,7 @@
 
 #include "RemoveReference.hpp"
 #include "SizeT.hpp"
+#include "IntegralConstant.hpp"
 
 namespace MySTD
 {
@@ -98,22 +99,6 @@ bool operator==(const Tuple<Args...>& tuple1, const Tuple<Args...>& tuple2)
 {
     return CompareTuples<sizeof...(Args) - 1, Args...>(tuple1, tuple2);
 }
-
-template<typename T, T V>
-struct IntegralConstant
-{
-    static constexpr T value = V;
-    using value_type = T;
-    using type = IntegralConstant;
-    constexpr operator value_type() const noexcept 
-    {
-        return value;
-    }
-    constexpr value_type operator()() const noexcept
-    {
-        return value;
-    }
-};
 
 template<typename T>
 struct TupleSize;

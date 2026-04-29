@@ -52,4 +52,7 @@ struct RemoveCV<const volatile T>
 template<typename T>
 using RemoveCVType = typename RemoveCV<T>::type;
 
+template<typename T>
+using RemoveCVRefType = RemoveCVType<RemoveReferenceType<T>>;
+
 } // namespace MySTD

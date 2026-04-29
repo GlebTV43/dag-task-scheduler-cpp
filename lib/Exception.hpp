@@ -43,4 +43,14 @@ public:
     InvalidDependencyException() noexcept : Exception("Invalid dependency") {}
 };
 
+class EmptyResultException final : public Exception {
+public:
+    EmptyResultException() noexcept : Exception("EmptyResult") {}
+};
+
+class ResultAlreadyMovedException final : public Exception {
+public:
+    ResultAlreadyMovedException() noexcept : Exception("Result has been already moved") {}
+};
+
 } // namespace MySTD
