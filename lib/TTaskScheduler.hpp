@@ -5,7 +5,9 @@
 #include <utility>
 
 #include "TaskNode.hpp"
+#include "TTask.hpp"
 #include "Invoke.hpp"
+#include "RemoveReference.hpp"
 
 class TTaskScheduler 
 {
@@ -29,7 +31,7 @@ public:
 
         tasks_.push_back(std::move(node));
 
-        return TTask<ResultType>(node_result);
+        return TTask<ResultType>(node_result, this);
     }
 
     void ExecuteAll()
@@ -40,3 +42,22 @@ public:
         }
     }
 };
+
+template<typename ResultType>
+    template<typename Func>
+        requires ApplyNeedLValue<Func, ResultType>
+auto TTask<ResultType>::Apply(Func&& func)
+{
+    auto future = GetFutureResult<ResultType&>();
+    return scheduler_->Add(func, future);
+}
+
+template<typename ResultType>
+    template<typename Func>
+        requires (!ApplyNeedLValue<Func, ResultType> &&
+                    CanInvoke<MySTD::RemoveReferenceType<Func>&, ResultType&&>)
+auto TTask<ResultType>::Apply(Func&& func)
+{
+    auto future = GetFutureResult<ResultType>();
+    return scheduler_->Add(func, future);
+}

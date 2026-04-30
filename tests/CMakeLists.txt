@@ -19,7 +19,9 @@ enable_testing()
 add_executable(
     processing-lib-tests
 
-    tests.cpp
+    base_tests.cpp
+    my_std_tests.cpp
+    task_scheduler_tests.cpp
 )
 
 target_link_libraries(

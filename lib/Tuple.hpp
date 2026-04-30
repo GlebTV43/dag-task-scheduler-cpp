@@ -45,8 +45,18 @@ public:
                                                     TupleRecursiveBase<Index + 1,  Types...>(std::forward<Args>(args)...) {}
 };
 
+template<typename... Types>
+class Tuple;
+
+template<>
+class Tuple<>
+{
+public:
+    Tuple() {}
+};
+
 template<typename T, typename... Types>
-class Tuple : public TupleRecursiveBase<0, T, Types...>
+class Tuple<T, Types...> : public TupleRecursiveBase<0, T, Types...>
 {
 public: 
     Tuple() = default;
@@ -55,7 +65,7 @@ public:
     Tuple(Args&&... args) : TupleRecursiveBase<0, T, Types...>(std::forward<Args>(args)...) {}
     
     template<typename... Args>
-    friend bool operator==(Tuple<Args...>& tuple1, Tuple<Args...>& tuple2) {}
+    friend bool operator==(Tuple<Args...>& tuple1, Tuple<Args...>& tuple2);
 };
 
 template<SizeT Index, typename T, typename... Types>

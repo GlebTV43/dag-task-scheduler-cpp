@@ -8,6 +8,7 @@
 #include "IntergerSequence.hpp"
 #include "SizeT.hpp"
 #include "IsSame.hpp"
+#include "Invoke.hpp"
 
 enum class Status 
 {
@@ -49,7 +50,7 @@ public:
 
         if (result_ == nullptr)
         {
-            throw EmptyResultException();
+            throw MySTD::EmptyResultException();
         }
 
         return *result_;
@@ -61,7 +62,7 @@ public:
 
         if (result_ == nullptr)
         {
-            throw EmptyResultException();
+            throw MySTD::EmptyResultException();
         }
 
         return *result_;
@@ -73,12 +74,12 @@ public:
 
         if (result_ == nullptr)
         {
-            throw EmptyResultException();
+            throw MySTD::EmptyResultException();
         }
 
         if (result_is_moved_)
         {
-            throw ResultAlreadyMovedException();
+            throw MySTD::ResultAlreadyMovedException();
         }
 
         result_is_moved_ = true;
@@ -96,129 +97,4 @@ public:
     void SetResult() {}
 
     virtual ~TaskNodeResult() = default;
-};
-
-
-template<typename T>
-class TFuture // это считай обертка над TaskNodeResult 
-{
-
-    TaskNodeResult<T>* node_;
-
-public:
-
-    explicit TFuture(TaskNodeResult<T>* node) : node_(node) {}
-    
-    T Get()
-    {
-        return node_->MoveResult(); 
-    }
-};
-
-template<typename T>
-class TFuture<T&>
-{
-
-    TaskNodeResult<T>* node_;
-
-public:
-
-    explicit TFuture(TaskNodeResult<T>* node) : node_(node) {}
-    
-    T Get()
-    {
-        return node_->GetResultRef();
-    }
-};
-
-template<typename T>
-class TFuture<const T&>
-{
-
-    TaskNodeResult<T>* node_;
-
-public:
-
-    explicit TFuture(TaskNodeResult<T>* node) : node_(node) {}
-    
-    T Get()
-    {
-        return node_->GetConstResultRef();
-    }
-};
-
-template<typename T>
-decltype(auto) Resolve(T&& value)
-{
-    return value;
-}
-
-template<typename T>
-decltype(auto) Resolve(TFuture<T>& value)
-{
-    return value.Get();
-}
-
-template<typename ResultType, typename Func, typename... Args>
-class TaskNode : public TaskNodeResult<ResultType>
-{
-    Func func_;
-    MySTD::Tuple<Args...> args_;
-
-    template<MySTD::SizeT... I>
-    void ExecuteImpl(MySTD::IndexSequence<I...>)
-    {
-        if constexpr (!MySTD::IsSameV<ResultType, void>) 
-        {
-            this->SetResult(Invoke(func_, Resolve(Get<I>(args_))...));
-        }
-        else 
-        {
-            Invoke(func_, Resolve(Get<I>(args_))...);
-            this->SetResult();
-        }
-    }
-
-public:
-    template<typename AnotherFunc, typename... AArgs> 
-    TaskNode(AnotherFunc&& func, AArgs&&... args) : func_(std::move(func)), args_(std::forward<AArgs>(args)...) {}
-
-    void Execute() override
-    {
-        if (this->state_ == Status::kFinished)
-        {
-            return;
-        }
-        else if (this->state_ == Status::kExecuting)
-        {
-            throw DependencyCycleException();
-        }
-
-        this->state_ = Status::kExecuting;
-
-        ExecuteImpl(MySTD::MakeIndexSequence<sizeof...(Args)>{});
-
-        this->state_ = Status::kFinished;
-    }
-};
-
-template<typename ResultType>
-class TTask
-{
-    TaskNodeResult<ResultType>* node_;
-
-public:
-    explicit TTask(TaskNodeResult<ResultType>* node) : node_(node) {}
-
-    template<typename T>
-    T GetResultSync()
-    {
-        return TFuture<T>(node_).Get();
-    }
-
-    template<typename T>
-    TFuture<T> GetFutureResult()
-    {
-        return TFuture<T>(node_);
-    }
 };
