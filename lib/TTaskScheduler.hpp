@@ -23,7 +23,7 @@ public:
 
         using Node = TaskNode<ResultType, 
                               CleanFunc,
-                              MySTD::RemoveReferenceType<Args>...>;
+                              Args...>;
         
         std::unique_ptr<Node> node(new Node(std::forward<Func>(func), std::forward<Args>(args)...));
             // таким образом решил проблему утечки, меняется лишь владение node, node_result - валиден
@@ -49,7 +49,7 @@ template<typename ResultType>
 auto TTask<ResultType>::Apply(Func&& func)
 {
     auto future = GetFutureResult<ResultType&>();
-    return scheduler_->Add(func, future);
+    return scheduler_->Add(std::forward<Func>(func), std::move(future));
 }
 
 template<typename ResultType>
@@ -59,5 +59,5 @@ template<typename ResultType>
 auto TTask<ResultType>::Apply(Func&& func)
 {
     auto future = GetFutureResult<ResultType>();
-    return scheduler_->Add(func, future);
+    return scheduler_->Add(std::forward<Func>(func), std::move(future));
 }

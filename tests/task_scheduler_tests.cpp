@@ -30,8 +30,6 @@ TEST(TaskSchedulerExtra, LazyGetResultSyncDoesNotExecuteUnrelatedTasks)
 
     ASSERT_EQ(resultTask.GetResultSync<int>(), 15);
     ASSERT_EQ(unrelatedRuns, 0);
-
-    (void)unused;
 }
 
 TEST(TaskSchedulerExtra, ExecutesEachTaskOnlyOnceEvenIfFutureUsedTwice)
@@ -241,6 +239,126 @@ TEST(TaskSchedulerExtra, ApplyCanReturnVoid)
     scheduler.ExecuteAll();
 
     ASSERT_EQ(observed, 42);
+}
 
-    (void)second;
+TEST(TaskSchedulerReferences, AddPassesArgumentByLvalueReference)
+{
+    TTaskScheduler scheduler;
+
+    int value = 10;
+
+    auto task = scheduler.Add([](int& x) {
+        x += 5;
+    }, value);
+
+    scheduler.ExecuteAll();
+
+    ASSERT_EQ(value, 15);
+}
+
+TEST(TaskSchedulerReferences, AddPassesArgumentByConstLvalueReference)
+{
+    TTaskScheduler scheduler;
+
+    const int value = 21;
+
+    auto task = scheduler.Add([](const int& x) {
+        return x * 2;
+    }, value);
+
+    ASSERT_EQ(task.GetResultSync<int>(), 42);
+}
+
+TEST(TaskSchedulerReferences, AddPassesObjectByLvalueReferenceToMemberFunction)
+{
+    struct Accumulator
+    {
+        int value = 0;
+
+        int AddAndReturn(int delta)
+        {
+            value += delta;
+            return value;
+        }
+    };
+
+    TTaskScheduler scheduler;
+
+    Accumulator accumulator;
+
+    auto task = scheduler.Add(&Accumulator::AddAndReturn, accumulator, 7);
+
+    ASSERT_EQ(task.GetResultSync<int>(), 7);
+    ASSERT_EQ(accumulator.value, 7);
+}
+
+TEST(TaskSchedulerReferences, ApplyPassesPreviousResultByLvalueReference)
+{
+    TTaskScheduler scheduler;
+
+    auto first = scheduler.Add([] {
+        return std::string("hello");
+    });
+
+    auto second = first.Apply([](std::string& value) {
+        value += "!";
+        return value;
+    });
+
+    ASSERT_EQ(second.GetResultSync<std::string>(), "hello!");
+}
+
+TEST(TaskSchedulerReferences, ApplyLvalueReferenceMutatesStoredPreviousResult)
+{
+    TTaskScheduler scheduler;
+
+    auto first = scheduler.Add([] {
+        return std::string("abc");
+    });
+
+    auto mutate = first.Apply([](std::string& value) {
+        value += "def";
+    });
+
+    auto read = first.Apply([](const std::string& value) {
+        return value;
+    });
+
+    scheduler.ExecuteAll();
+
+    ASSERT_EQ(read.GetResultSync<std::string>(), "abcdef");
+}
+
+TEST(TaskSchedulerReferences, ApplyCanUseConstLvalueReference)
+{
+    TTaskScheduler scheduler;
+
+    auto first = scheduler.Add([] {
+        return 100;
+    });
+
+    auto second = first.Apply([](const int& value) {
+        return value + 23;
+    });
+
+    ASSERT_EQ(second.GetResultSync<int>(), 123);
+}
+
+TEST(TaskSchedulerReferences, ApplyDoesNotStoreReferenceToLocalFuture)
+{
+    TTaskScheduler scheduler;
+
+    int observed = 0;
+
+    auto first = scheduler.Add([] {
+        return 42;
+    });
+
+    auto second = first.Apply([&observed](int value) {
+        observed = value;
+    });
+
+    scheduler.ExecuteAll();
+
+    ASSERT_EQ(observed, 42);
 }

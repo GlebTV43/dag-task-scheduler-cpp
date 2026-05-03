@@ -1,23 +1,45 @@
-#include "../lib/Tuple.hpp"
-#include "../lib/Apply.hpp"
-#include "../lib/TTaskScheduler.hpp"
-#include "../lib/TaskNode.hpp"
+#include "../src/controller/Controller.hpp"
 
-#include <iostream>
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 int main()
-{
-    MySTD::Tuple<int, int, int> tuple{2, 3, 4};
+{   
+    #ifdef _WIN32
+        SetConsoleCP(CP_UTF8);
+        SetConsoleOutputCP(CP_UTF8);
+    #endif
+    try
+    {
+        GeoRequester geo_requester;
+        WeatherRequester weather_requester;
+        PlaceRequester places_requester;
 
-    int result = MySTD::Apply(
-        [](int a, int b, int c)
-        {
-            return a * b + c;
-        },
-        tuple
-    );
+        GeoRepository geo_repository(geo_requester);
+        WeatherRepository weather_repository(weather_requester);
+        PlaceRepository places_repository(places_requester);
 
-    std::cout << result << '\n';
+        RecommendationService service(
+            geo_repository,
+            weather_repository,
+            places_repository
+        );
+
+        Controller controller(service);
+
+        controller.ShowRecommendation();
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr << "Error: " << error.what() << '\n';
+        return 1;
+    }
+    catch (const MySTD::Exception& error)
+    {
+        std::cerr << "Scheduler error: " << error.What() << '\n';
+        return 1;
+    }
 
     return 0;
 }

@@ -9,9 +9,8 @@ FetchContent_Declare(
     FIND_PACKAGE_ARGS NAMES GTest
 )
 
-# Prevent overriding the parent project's compiler/linker
-# settings on Windows
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
 FetchContent_MakeAvailable(googletest)
 
 enable_testing()
@@ -26,7 +25,7 @@ add_executable(
 
 target_link_libraries(
     processing-lib-tests
-    GTest::gtest_main
+    PRIVATE
     GTest::gmock_main
 )
 

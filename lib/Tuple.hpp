@@ -14,11 +14,9 @@ class TupleImpl
 {  
     T value_;
 public: 
-    TupleImpl() = default; // добавлю во все классы дефолтный конструктор, чтобы можно было создавать пустой Tuple,
-                           // но это будет работать только для типов, которые умеют конструироваться по умолчанию
-    TupleImpl(T const &value) : value_(value) {}
-
-    TupleImpl(T&& value) : value_(std::move(value)) {}
+    
+    template<typename U>
+    TupleImpl(U&& value) : value_(std::forward<U>(value)) {}
 
     T& Get()
     {
@@ -34,14 +32,14 @@ public:
 };
 
 template<SizeT Index, typename L, typename... Types>
-class TupleRecursiveBase<Index, L, Types...> : public TupleImpl<Index, typename MySTD::RemoveReferenceType<L>>,
+class TupleRecursiveBase<Index, L, Types...> : public TupleImpl<Index, L>,
                                                 public TupleRecursiveBase<Index + 1, Types...> 
 {
 public:
     TupleRecursiveBase() = default;
 
     template<typename T, typename... Args>
-    TupleRecursiveBase(T&& arg, Args&&... args) : TupleImpl<Index, typename MySTD::RemoveReferenceType<T>>(std::forward<T>(arg)),
+    TupleRecursiveBase(T&& arg, Args&&... args) : TupleImpl<Index, L>(std::forward<T>(arg)),
                                                     TupleRecursiveBase<Index + 1,  Types...>(std::forward<Args>(args)...) {}
 };
 

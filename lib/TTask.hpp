@@ -87,7 +87,7 @@ class TaskNode : public TaskNodeResult<ResultType>
 
 public:
     template<typename AnotherFunc, typename... AArgs> 
-    TaskNode(AnotherFunc&& func, AArgs&&... args) : func_(std::move(func)), args_(std::forward<AArgs>(args)...) {}
+    TaskNode(AnotherFunc&& func, AArgs&&... args) : func_(std::forward<Func>(func)), args_(std::forward<AArgs>(args)...) {}
 
     void Execute() override
     {
