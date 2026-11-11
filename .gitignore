@@ -5,3 +5,21 @@ silly_mein_C++.txt
 .vscode
 
 data
+
+# Local build output and credentials
+/build/
+/cmake-build-*/
+/.vscode/
+/.idea/
+.env
+.env.*
+!.env.example
+*apikey*.txt
+*api_key*.txt
+!*.example.txt
+*.pem
+*.key
+
+!src/data/
+src/data/*
+!src/data/*.example.txt
